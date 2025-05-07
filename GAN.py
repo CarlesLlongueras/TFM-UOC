@@ -23,7 +23,7 @@ def weights_init(m):
 
 
 class GAN(pl.LightningModule):
-    def __init__(self, input_dim, output_dim, batch_size, lr):
+    def __init__(self, output_dim, input_dim = 100, lr = 0.00030, end_print = True):
         super().__init__()
         self.automatic_optimization = False  # Control manual de optimización
         self.save_hyperparameters()
@@ -39,11 +39,13 @@ class GAN(pl.LightningModule):
         self.train_g_loss = []
         self.train_d_loss = []
 
+        self.print = end_print
+
     def forward(self, z):
         return self.generator(z)
 
     def training_step(self, batch):
-        data, _ = batch  # Solo se usan los datos, no las etiquetas
+        data, labels = batch
         opt_g, opt_d = self.optimizers()
 
         batch_size = data.shape[0]
@@ -116,19 +118,20 @@ class GAN(pl.LightningModule):
         return [opt_g, opt_d], []
 
     def on_train_end(self):
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.train_g_loss, label="Generador (G) Loss", color='blue', linewidth=2)
-        plt.plot(self.train_d_loss, label="Discriminador (D) Loss", color='orange', linewidth=2)
-        plt.xlabel("Épocas")
-        plt.ylabel("Pérdida")
-        plt.title("Evolución de la Pérdida durante el Entrenamiento")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        if self.print:
+            plt.figure(figsize=(10, 6))
+            plt.plot(self.train_g_loss, label="Generador (G) Loss", color='blue', linewidth=2)
+            plt.plot(self.train_d_loss, label="Discriminador (D) Loss", color='orange', linewidth=2)
+            plt.xlabel("Épocas")
+            plt.ylabel("Pérdida")
+            plt.title("Evolución de la Pérdida durante el Entrenamiento")
+            plt.legend()
+            plt.grid(True)
+            plt.show()
 
-    def generate_samples(self, num_samples=20):
+    def generate_samples(self, data_module, num_samples=20, all_samples = False):
         self.generator.eval()
         z = torch.randn(num_samples, self.hparams.input_dim, device=self.device)
         with torch.no_grad():
             synthetic_samples = self.generator(z)
-        pd.DataFrame(synthetic_samples.cpu().numpy()).to_csv("synthetic_samples.csv", index=False)
+        data_module.add_synthetic(pd.DataFrame(synthetic_samples.numpy()), all_samples)
