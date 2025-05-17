@@ -78,13 +78,6 @@ class DataModule(pl.LightningDataModule):
         if LABEL_COLUMN not in self.df.columns:
             raise ValueError(f"La columna de etiquetas '{LABEL_COLUMN}' no existe en el dataframe")
 
-        # aux = self.df[LABEL_COLUMN]
-        # l1 = self.df.drop(columns=[LABEL_COLUMN])
-        # pca = PCA(n_components=160)
-        # pca.fit(l1)
-        # self.df = pd.DataFrame(pca.transform(l1))
-        # self.df[LABEL_COLUMN] = aux
-
         # Datos de supervivientes (etiqueta 0)
         self.survivor_features, self.survivor_labels = self.split_features_labels(
             self.df[self.df[LABEL_COLUMN] == 0]
